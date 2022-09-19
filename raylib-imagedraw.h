@@ -40,7 +40,6 @@ RLAPI void ImageDrawLineHorizontal(Image* dst, int posX, int posY, int width, Co
 RLAPI void ImageDrawLineVertical(Image* dst, int posX, int posY, int height, Color color);
 RLAPI void ImageDrawPoly(Image* dst, Vector2* points, int pointCount, Color color);
 RLAPI void ImageDrawPolyLines(Image* dst, Vector2* points, int pointCount, Color color);
-RLAPI void ImageDrawCircleFilled(Image* dst, int centerX, int centerY, int radius, Color color);
 RLAPI void ImageDrawEllipse(Image* dst, int centerX, int centerY, int radiusX, int radiusY, Color color);
 RLAPI void ImageDrawEllipseLines(Image* dst, int centerX, int centerY, int radiusX, int radiusY, Color color);
 
@@ -138,27 +137,6 @@ void ImageDrawPoly(Image* dst, Vector2* points, int pointCount, Color color) {
         for (int i = 0; i < count; i += 2) {
             int width = nodes[i + 1] - nodes[i];
             ImageDrawLineHorizontal(dst, nodes[i], y, width, color);
-        }
-    }
-}
-
-void ImageDrawCircleFilled(Image* dst, int centerX, int centerY, int radius, Color color) {
-    int x = 0;
-    int y = radius;
-    int d = 3 - 2 * radius;
-
-    while (y >= x) {
-        ImageDrawLineHorizontal(dst, centerX - x, centerY + y, x * 2, color);
-        ImageDrawLineHorizontal(dst, centerX - x, centerY - y, x * 2, color);
-        ImageDrawLineHorizontal(dst, centerX - y, centerY + x, y * 2, color);
-        ImageDrawLineHorizontal(dst, centerX - y, centerY - x, y * 2, color);
-        x++;
-
-        if (d > 0) {
-            y--;
-            d = d + 4 * (x - y) + 10;
-        } else {
-            d = d + 4 * x + 6;
         }
     }
 }
