@@ -34,10 +34,13 @@ int main() {
         {200, 100},
         {100, 200}
     };
-    ImageDrawPolygonLines(&image, points, 3, BLACK);
+    ImageDrawPoly(&image, points, 3, ORANGE);
 
 
-    ImageDrawEllipseLines(&image, 300, 300, 100, 50, GetMouseX(), 50, BROWN);
+
+    ImageDrawCircleFilled(&image, 200, 200, 40, PURPLE);
+
+    ImageDrawEllipse(&image, 200, 200, 200, 50, BLUE);
 
     Texture texture = LoadTextureFromImage(image);
     UnloadImage(image);
