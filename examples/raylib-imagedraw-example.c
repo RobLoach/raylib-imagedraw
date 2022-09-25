@@ -16,59 +16,82 @@
 #define RAYLIB_IMAGEDRAW_IMPLEMENTATION
 #include "raylib-imagedraw.h"
 
-int main() {
+int main(int argc, char *argv[]) {
     // Initialization
     //--------------------------------------------------------------------------------------
+
+    // Make sure we're running in the correct directory.
+    const char* dir = GetDirectoryPath(argv[0]);
+    ChangeDirectory(dir);
+
     const int screenWidth = 800;
     const int screenHeight = 450;
+    const int fontSize = 10;
     InitWindow(screenWidth, screenHeight, "[raylib-imagedraw] example");
-    SetTargetFPS(60);
+    SetTargetFPS(10);
 
-    Image image = GenImageColor(screenWidth, 450, RAYWHITE);
+    // Create an image.
+    Image screen = GenImageColor(screenWidth, screenHeight, RAYWHITE);
 
-    ImageDrawLineHorizontal(&image, 10, 10, 200, RED);
-    ImageDrawLineVertical(&image, 10, 10, 200, RED);
+    // ImageDrawLine
+    ImageDrawText(&screen, "Lines", 10, 10, fontSize, BLACK);
+    ImageDrawLineHorizontal(&screen, 10, 20, 20, RED);
+    ImageDrawLineVertical(&screen, 10, 20, 20, RED);
 
+    // ImageDrawPoly
+    ImageDrawText(&screen, "Poly", 10, 50, fontSize, BLACK);
     Vector2 points[3] = {
-        {100, 100},
-        {200, 100},
-        {100, 200}
+        {10, 60},
+        {80, 65},
+        {20, 80}
     };
-    ImageDrawPoly(&image, points, 3, ORANGE);
+    ImageDrawPoly(&screen, points, 3, ORANGE);
+    ImageDrawPolyLines(&screen, points, 3, BLACK);
 
+    // ImageDrawEllipse
+    ImageDrawText(&screen, "Ellipse", 10, 100, fontSize, BLACK);
+    ImageDrawEllipse(&screen, 30, 130, 15, 20, BLUE);
+    ImageDrawEllipseLines(&screen, 30, 130, 15, 20, BLACK);
 
+    // ImageRotate
+    ImageDrawText(&screen, "Rotate", 100, 10, fontSize, BLACK);
+    Image carl = LoadImage("resources/carlsagan.png");
+    ImageDrawImage(&screen, carl, 100, 20, WHITE);
+    TraceLog(LOG_INFO, "Size: %ix%i", carl.width, carl.height);
 
-    ImageDrawCircleFilled(&image, 200, 200, 40, PURPLE);
-
-    ImageDrawEllipse(&image, 200, 200, 200, 50, BLUE);
-
-    Texture texture = LoadTextureFromImage(image);
-    UnloadImage(image);
+    Texture screenTexture = LoadTextureFromImage(screen);
+    float rotation = 0;
     //--------------------------------------------------------------------------------------
 
     while(!WindowShouldClose()) {
 
         // Update
         //----------------------------------------------------------------------------------
-
+        rotation += 4;
         //----------------------------------------------------------------------------------
 
         // Draw
         //----------------------------------------------------------------------------------
+        Image carlRotated = ImageRotate(carl, rotation);
         BeginDrawing();
         {
             ClearBackground(RAYWHITE);
-            DrawTexture(texture, 0, 0, WHITE);
+            DrawTexture(screenTexture, 0, 0, WHITE);
 
+            DrawImage(carlRotated, 100 + carl.width / 2 - carlRotated.width / 2, 20 + carl.height + 50 + carl.height / 2 - carlRotated.height / 2);
         }
         EndDrawing();
+        UnloadImage(carlRotated);
         //----------------------------------------------------------------------------------
     }
 
     // De-Initialization
     //--------------------------------------------------------------------------------------
 
-    UnloadTexture(texture);
+    UnloadImage(screen);
+    UnloadImage(carl);
+    UnloadTexture(screenTexture);
+
     CloseWindow();
     //--------------------------------------------------------------------------------------
 

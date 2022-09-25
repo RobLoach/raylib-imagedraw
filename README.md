@@ -2,6 +2,8 @@
 
 Extra image drawing functionality for raylib.
 
+[![Screenshot](examples/raylib-imagedraw-example.png)](examples/raylib-imagedraw-example.c)
+
 ## Usage
 
 ``` c
@@ -14,33 +16,27 @@ int main() {
     const int screenWidth = 800;
     const int screenHeight = 450;
     InitWindow(screenWidth, screenHeight, "[raylib-imagedraw] example");
+    Image screen = GenImageColor(screenWidth, screenHeight, RAYWHITE);
 
-    Image image = GenImageColor(screenWidth, 450, RAYWHITE);
-
-    ImageDrawLineHorizontal(&image, 10, 10, 200, RED);
-
-    int points[6] = {100, 100, 200, 100, 100, 200};
-    ImageDrawPolygon(&image, &points[0], 3, BLACK);
-
-    Texture texture = LoadTextureFromImage(image);
-    UnloadImage(image);
+    Vector2 points[3] = {
+        {10, 60},
+        {80, 65},
+        {20, 80}
+    };
+    ImageDrawPoly(&screen, points, 3, ORANGE);
+    ImageDrawPolyLines(&screen, points, 3, BLACK);
 
     while (!WindowShouldClose()) {
         BeginDrawing();
         {
             ClearBackground(RAYWHITE);
-            DrawTexture(texture, 0, 0, WHITE);
-
+            DrawImage(screen);
         }
         EndDrawing();
     }
 
-    // De-Initialization
-    //--------------------------------------------------------------------------------------
-
-    UnloadTexture(texture);
+    UnloadImage(screen);
     CloseWindow();
-    //--------------------------------------------------------------------------------------
 
     return 0;
 }
@@ -48,6 +44,17 @@ int main() {
 
 ## API
 
+``` c
+void ImageDrawLineHorizontal(Image* dst, int posX, int posY, int width, Color color);
+void ImageDrawLineVertical(Image* dst, int posX, int posY, int height, Color color);
+void ImageDrawPoly(Image* dst, Vector2* points, int pointCount, Color color);
+void ImageDrawPolyLines(Image* dst, Vector2* points, int pointCount, Color color);
+void ImageDrawEllipse(Image* dst, int centerX, int centerY, int radiusX, int radiusY, Color color);
+void ImageDrawEllipseLines(Image* dst, int centerX, int centerY, int radiusX, int radiusY, Color color);
+void ImageDrawImage(Image* dst, Image src, int posX, int posY, Color tint);
+Image ImageRotate(Image src, float radians);
+void DrawImage(Image image, int posX, int posY);
+```
 
 ## License
 

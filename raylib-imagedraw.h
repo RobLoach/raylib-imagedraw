@@ -42,6 +42,9 @@ RLAPI void ImageDrawPoly(Image* dst, Vector2* points, int pointCount, Color colo
 RLAPI void ImageDrawPolyLines(Image* dst, Vector2* points, int pointCount, Color color);
 RLAPI void ImageDrawEllipse(Image* dst, int centerX, int centerY, int radiusX, int radiusY, Color color);
 RLAPI void ImageDrawEllipseLines(Image* dst, int centerX, int centerY, int radiusX, int radiusY, Color color);
+RLAPI void ImageDrawImage(Image* dst, Image src, int posX, int posY, Color tint);
+RLAPI Image ImageRotate(Image src, float angle);
+RLAPI void DrawImage(Image image, int posX, int posY);
 
 #ifdef __cplusplus
 }
@@ -57,8 +60,35 @@ RLAPI void ImageDrawEllipseLines(Image* dst, int centerX, int centerY, int radiu
 extern "C" {
 #endif
 
-#ifndef RAYLIB_IMAGEDRAW_NO_MATH
+#ifndef RAYLIB_IMAGEDRAW_MIN
+#define RAYLIB_IMAGEDRAW_MIN(a, b) (((a) < (b)) ? (a) : (b))
+#endif
+#ifndef RAYLIB_IMAGEDRAW_MAX
+#define RAYLIB_IMAGEDRAW_MAX(a, b) (((a) > (b)) ? (a) : (b))
+#endif
+
+#ifndef RAYLIB_IMAGEDRAW_COSF
 #include <math.h>
+#define RAYLIB_IMAGEDRAW_COSF cosf
+#endif
+
+#ifndef RAYLIB_IMAGEDRAW_SINF
+#include <math.h>
+#define RAYLIB_IMAGEDRAW_SINF sinf
+#endif
+
+#ifndef RAYLIB_IMAGEDRAW_PI
+#define RAYLIB_IMAGEDRAW_PI 3.14159265358979323846f
+#endif
+
+#ifndef RAYLIB_IMAGEDRAW_SQRTF
+#include <math.h>
+#define RAYLIB_IMAGEDRAW_SQRTF sqrtf
+#endif
+
+#ifndef RAYLIB_IMAGEDRAW_ATAN2F
+#include <math.h>
+#define RAYLIB_IMAGEDRAW_ATAN2F atan2f
 #endif
 
 void ImageDrawLineHorizontal(Image* dst, int posX, int posY, int width, Color color) {
@@ -88,10 +118,10 @@ void ImageDrawPoly(Image* dst, Vector2* points, int pointCount, Color color) {
 
     for (int i = 0; i < pointCount; i++) {
         if (miny > points[i].y) {
-            miny = points[i].y;
+            miny = (int)points[i].y;
         }
         if (maxy < points[i].y) {
-            maxy = points[i].y;
+            maxy = (int)points[i].y;
         }
     }
 
@@ -112,7 +142,7 @@ void ImageDrawPoly(Image* dst, Vector2* points, int pointCount, Color color) {
                 (y0 < (float)y && y1 >= (float)y) ||
                 (y1 < (float)y && y0 >= (float)y)
             ) {
-                nodes[count] = (int)(x0 + (y - y0) / (y1 - y0) * (x1 - x0));
+                nodes[count] = (int)(x0 + ((float)y - y0) / (y1 - y0) * (x1 - x0));
                 count++;
             }
             j = i;
@@ -137,6 +167,14 @@ void ImageDrawPoly(Image* dst, Vector2* points, int pointCount, Color color) {
         for (int i = 0; i < count; i += 2) {
             int width = nodes[i + 1] - nodes[i];
             ImageDrawLineHorizontal(dst, nodes[i], y, width, color);
+        }
+    }
+}
+
+void DrawImage(Image image, int posX, int posY) {
+    for (int x = 0; x < image.width; x++) {
+        for (int y = 0; y < image.height; y++) {
+            DrawPixel(posX + x, posY + y, GetImageColor(image, x, y));
         }
     }
 }
@@ -256,6 +294,97 @@ void ImageDrawTriangleLines(Image* dst, Vector2 point1, Vector2 point2, Vector2 
 void ImageDrawTriangle(Image* dst, Vector2 point1, Vector2 point2, Vector2 point3, Color color) {
     Vector2 points[3] = {point1, point2, point3};
     ImageDrawPoly(dst, points, 3, color);
+}
+
+Image ImageRotate(Image src, float angle) {
+    // TODO: Determine if we need to rotate the image by -angle or angle
+    float radians = -angle * (RAYLIB_IMAGEDRAW_PI / 180.0f);
+    int iDiagonal = (int)RAYLIB_IMAGEDRAW_SQRTF((float)(src.width * src.width + src.height * src.height));
+    int iCentreX = src.width / 2;
+    int iCentreY = src.height / 2;
+    int iDestCentre = iDiagonal / 2;
+    Image out = GenImageColor(iDiagonal, iDiagonal, BLANK);
+
+    for (int i = 0; i < iDiagonal; ++i) {
+        for (int j = 0; j < iDiagonal; ++j) {
+            int x = j - iDestCentre;
+            int y = iDestCentre - i;
+
+            float fDistance = RAYLIB_IMAGEDRAW_SQRTF((float)(x * x + y * y));
+            float fPolarAngle = 0.0;
+            if (x == 0) {
+                if (y == 0) {
+                    ImageDrawPixel(&out, j, i, GetImageColor(src, iCentreX, iCentreY));
+                    continue;
+                }
+                else if (y < 0) {
+                    fPolarAngle = 1.5f * RAYLIB_IMAGEDRAW_PI;
+                }
+                else {
+                    fPolarAngle = 0.5f * RAYLIB_IMAGEDRAW_PI;
+                }
+            }
+            else {
+                fPolarAngle = RAYLIB_IMAGEDRAW_ATAN2F((float)y, (float)x);
+            }
+
+            fPolarAngle -= radians;
+
+            float fTrueX = fDistance * RAYLIB_IMAGEDRAW_COSF(fPolarAngle);
+            float fTrueY = fDistance * RAYLIB_IMAGEDRAW_SINF(fPolarAngle);
+
+            fTrueX = fTrueX + (float)iCentreX;
+            fTrueY = (float)iCentreY - fTrueY;
+
+            int iFloorX = (int)fTrueX;
+            int iFloorY = (int)fTrueY;
+            int iCeilingX = (int)(fTrueX);
+            int iCeilingY = (int)(fTrueY);
+
+            if (iFloorX < 0 || iCeilingX < 0 || iFloorX >= src.width || iCeilingX >= src.width || iFloorY < 0 || iCeilingY < 0 || iFloorY >= src.height || iCeilingY >= src.height) continue;
+
+            float fDeltaX = fTrueX - (float)iFloorX;
+            float fDeltaY = fTrueY - (float)iFloorY;
+
+            Color clrTopLeft = GetImageColor(src, iFloorX, iFloorY);
+            Color clrTopRight = GetImageColor(src, iCeilingX, iFloorY);
+            Color clrBottomLeft = GetImageColor(src, iFloorX, iCeilingY);
+            Color clrBottomRight = GetImageColor(src, iCeilingX, iCeilingY);
+
+            float fTopRed = (1 - fDeltaX) * clrTopLeft.r + fDeltaX * clrTopRight.r;
+            float fTopGreen = (1 - fDeltaX) * clrTopLeft.g + fDeltaX * clrTopRight.g;
+            float fTopBlue = (1 - fDeltaX) * clrTopLeft.b + fDeltaX * clrTopRight.b;
+            float fTopAlpha = (1 - fDeltaX) * clrTopLeft.a + fDeltaX * clrTopRight.a;
+
+            float fBottomRed = (1 - fDeltaX) * clrBottomLeft.r + fDeltaX * clrBottomRight.r;
+            float fBottomGreen = (1 - fDeltaX) * clrBottomLeft.g + fDeltaX * clrBottomRight.g;
+            float fBottomBlue = (1 - fDeltaX) * clrBottomLeft.b + fDeltaX * clrBottomRight.b;
+            float fBottomAlpha = (1 - fDeltaX) * clrBottomLeft.a + fDeltaX * clrBottomRight.a;
+
+            int iRed = (int)(((1 - fDeltaY) * fTopRed + fDeltaY * fBottomRed));
+            int iGreen = (int)(((1 - fDeltaY) * fTopGreen + fDeltaY * fBottomGreen));
+            int iBlue = (int)(((1 - fDeltaY) * fTopBlue + fDeltaY * fBottomBlue));
+            int iAlpha = (int)(((1 - fDeltaY) * fTopAlpha + fDeltaY * fBottomAlpha));
+
+            if (iRed < 0) iRed = 0;
+            if (iRed > 255) iRed = 255;
+            if (iGreen < 0) iGreen = 0;
+            if (iGreen > 255) iGreen = 255;
+            if (iBlue < 0) iBlue = 0;
+            if (iBlue > 255) iBlue = 255;
+            if (iAlpha < 0) iAlpha = 0;
+            if (iAlpha > 255) iAlpha = 255;
+
+            ImageDrawPixel(&out, j, i, (Color){(unsigned char)iRed, (unsigned char)iGreen, (unsigned char)iBlue, (unsigned char)iAlpha});
+        }
+    }
+	return out;
+}
+
+void ImageDrawImage(Image* dst, Image src, int posX, int posY, Color tint) {
+    Rectangle srcRect = (Rectangle){0, 0, (float)src.width, (float)src.height};
+    Rectangle dstRect = (Rectangle){(float)posX, (float)posY, (float)src.width, (float)src.height};
+    ImageDraw(dst, src, srcRect, dstRect, tint);
 }
 
 #ifdef __cplusplus
