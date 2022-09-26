@@ -1,6 +1,6 @@
 # raylib-imagedraw
 
-Extra image drawing functionality for raylib.
+Extra image manipulation software rendering library functionality for raylib.
 
 [![Screenshot](examples/raylib-imagedraw-example.png)](examples/raylib-imagedraw-example.c)
 
